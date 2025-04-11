@@ -1,0 +1,35 @@
+# --- Ntfy Clipboard Sync Configuration ---
+
+# --- 发送配置 (本地剪贴板 -> ntfy) ---
+sender:
+  enabled: true # 是否启用发送功能
+  ntfy_topic_url: "https://ntfy.sh/YOUR_SEND_TOPIC_HERE" # 替换为你的发送目标 ntfy 主题 URL (重要！)
+  poll_interval_seconds: 1.0 # 检查本地剪贴板的频率（秒）
+  request_timeout_seconds: 15 # HTTP POST 请求的超时时间（秒）
+  filename_prefix: "clipboard_content_" # 发送到 ntfy 的临时文件名前缀 (纯 ASCII)
+
+# --- 接收配置 (ntfy -> 本地剪贴板) ---
+receiver:
+  enabled: true # 是否启用接收功能
+  ntfy_server: "ntfy.sh" # ntfy 服务器地址
+  ntfy_topic: "YOUR_RECEIVE_TOPIC_HERE" # 替换成您要监听的 ntfy 主题 (重要！)
+  reconnect_delay_seconds: 5  # WebSocket 连接失败后的重试延迟（秒）
+  request_timeout_seconds: 15 # 下载附件的超时时间（秒）
+
+# --- 通用设置 ---
+logging:
+  level: "INFO" # 日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+
+# --- macOS 特定设置 (图片处理) ---
+# 如果在非 macOS 上运行，这些设置会被忽略
+macos:
+  image_support: true # 是否尝试处理图片复制 (需要 macOS)
+  # 支持的图片文件后缀（小写）及其对应的 macOS UTI (仅用于日志/理解)
+  image_uti_map:
+    '.png': 'public.png'
+    '.jpg': 'public.jpeg'
+    '.jpeg': 'public.jpeg'
+    '.gif': 'com.compuserve.gif'
+    '.bmp': 'com.microsoft.bmp'
+    '.tiff': 'public.tiff'
+    '.tif': 'public.tiff'
