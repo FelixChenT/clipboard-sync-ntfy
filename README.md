@@ -107,23 +107,55 @@ A `run.sh` script is provided to conveniently set up the environment and start t
 
 ```bash
 chmod +x scripts/run.sh
-./scripts/run.sh
+./scripts/run.sh [mode] [options]
 ```
 
 The script will automatically:
 1. Check Python environment.
 2. Check and create Python virtual environment (`venv`):
    - If the virtual environment doesn't exist, creates a new one and installs all dependencies.
-   - If the virtual environment exists, won't update dependencies by default (unless `--update-deps` flag is used).
+   - If the virtual environment exists, won't update dependencies by default (unless an option like `--update-deps` is used).
 3. Check configuration file:
    - If `config/config.yaml` doesn't exist, prompts to copy from `config.yaml.example` and customize.
-4. Start the main program `main.py`.
+4. Start the main program `main.py`, passing the specified mode.
 
-**Parameters:**
-- `--update-deps`: Force update dependencies in existing virtual environment
-  ```bash
-  ./scripts/run.sh --update-deps
-  ```
+**Arguments & Options:**
+
+-   **`[mode]`** (optional): Specifies which components to run. This argument is passed to `main.py` as `--mode <value>` and will **override** the `sender.enabled` and `receiver.enabled` settings in your `config.yaml`. Can be one of:
+    -   `sender`: Starts only the clipboard sender.
+    -   `receiver`: Starts only the clipboard receiver.
+    -   `both`: Starts both the sender and receiver.
+    If omitted, the script defaults to passing `--mode both` to `main.py`, meaning both components will be enabled unless explicitly disabled by their individual settings in `config.yaml` (however, the command-line override takes precedence if used).
+
+-   **`[options]`**:
+    -   `--update-deps`: Updates Python dependencies before running. This can be combined with the `[mode]` argument.
+
+**Examples:**
+
+-   Run only the sender:
+    ```bash
+    ./scripts/run.sh sender
+    ```
+-   Run only the receiver:
+    ```bash
+    ./scripts/run.sh receiver
+    ```
+-   Run both sender and receiver (this is the default behavior if no mode is specified):
+    ```bash
+    ./scripts/run.sh
+    ```
+    or explicitly:
+    ```bash
+    ./scripts/run.sh both
+    ```
+-   Run only the sender and force update dependencies:
+    ```bash
+    ./scripts/run.sh sender --update-deps
+    ```
+    or (note: for `run.sh` the order of these two specific arguments matters if mode is specified)
+    ```bash
+    ./scripts/run.sh --update-deps sender
+    ```
 
 Press `Ctrl+C` to stop running.
 

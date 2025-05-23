@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse # Added for command-line argument parsing
 import asyncio
 import logging
 import sys
@@ -40,15 +41,51 @@ def handle_signal(sig, frame):
 
 async def main():
     """Main function to load config, set up components, run tasks, and handle shutdown."""
+
+    # --- Argument Parsing ---
+    parser = argparse.ArgumentParser(description="Clipboard Sync with Ntfy")
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=['sender', 'receiver', 'both'],
+        default=None, # Default is None, meaning rely on config file
+        help="Specify the operating mode: 'sender', 'receiver', or 'both'. Overrides config.yaml."
+    )
+    args = parser.parse_args()
+
+    # --- Load Configuration ---
     config = load_config()
     if not config:
         logger.critical("Failed to load configuration. Exiting.")
         sys.exit(1)
 
-    # --- Setup Logging based on Config ---
+    # --- Setup Logging based on Config (initial setup) ---
     log_config = config.get('logging', {})
     setup_logging(log_config.get('level', 'INFO'))
     logger.info("Logging configured.")
+
+    # --- Apply Command-Line Mode Override ---
+    if args.mode:
+        if args.mode == "sender":
+            logger.info("Overriding config: Starting SENDER only based on --mode argument.")
+            config.setdefault('sender', {})['enabled'] = True
+            config.setdefault('receiver', {})['enabled'] = False
+        elif args.mode == "receiver":
+            logger.info("Overriding config: Starting RECEIVER only based on --mode argument.")
+            config.setdefault('sender', {})['enabled'] = False
+            config.setdefault('receiver', {})['enabled'] = True
+        elif args.mode == "both":
+            logger.info("Overriding config: Starting BOTH sender and receiver based on --mode argument.")
+            config.setdefault('sender', {})['enabled'] = True
+            config.setdefault('receiver', {})['enabled'] = True
+    else:
+        logger.info("Using config file settings for enabling sender/receiver (no --mode override).")
+    
+    # Ensure 'enabled' keys exist even if not overridden, defaulting to what's in config or False
+    # This is important for the Sender/Receiver class initializers
+    config.setdefault('sender', {}).setdefault('enabled', False)
+    config.setdefault('receiver', {}).setdefault('enabled', False)
+
 
     # --- Platform Checks ---
     is_macos = sys.platform == 'darwin'

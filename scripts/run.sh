@@ -19,12 +19,23 @@ CONFIG_EXAMPLE="config/config.yaml.example"
 # --- Argument Parsing ---
 # Default: do not update dependencies unless requested or first run
 update_dependencies=false
-# Check if the first argument is --update-deps
+SERVICE_MODE="both" # Default service mode
+
+# Check for --update-deps first
 if [[ "$1" == "--update-deps" ]]; then
   update_dependencies=true
   echo "Argument '--update-deps' provided. Will update dependencies."
-  # Shift the arguments so --update-deps isn't passed to the python script
-  shift
+  shift # Remove --update-deps from arguments
+fi
+
+# Check for service mode (sender, receiver, both)
+if [[ "$1" == "sender" || "$1" == "receiver" || "$1" == "both" ]]; then
+  SERVICE_MODE="$1"
+  echo "Service mode specified: $SERVICE_MODE"
+  shift # Remove service mode argument
+else
+  echo "No specific service mode (sender/receiver/both) specified, or argument is not recognized as such. Defaulting to '$SERVICE_MODE'."
+  # Any remaining $1 would be passed to main.py via "$@"
 fi
 
 # --- Functions ---
@@ -143,7 +154,7 @@ echo "Starting the application ($MAIN_SCRIPT)..."
 
 # Use exec to replace the shell process with the Python process
 # Pass remaining arguments (after potentially removing --update-deps) to the Python script
-exec $PYTHON_EXEC "$PROJECT_ROOT/$MAIN_SCRIPT" "$@"
+exec $PYTHON_EXEC "$PROJECT_ROOT/$MAIN_SCRIPT" --mode "$SERVICE_MODE" "$@"
 
 # If exec fails (e.g., python not found after venv activation issues), this line will be reached.
 echo "Error: Failed to execute '$PYTHON_EXEC $PROJECT_ROOT/$MAIN_SCRIPT'" >&2
