@@ -106,23 +106,55 @@
 
 ```bash
 chmod +x scripts/run.sh
-./scripts/run.sh
+./scripts/run.sh [模式] [选项]
 ```
 
 脚本会自动：
 1. 检查 Python 环境。
 2. 检查并创建 Python 虚拟环境 (`venv`)：
    - 如果虚拟环境不存在，会创建新的虚拟环境并安装所有依赖。
-   - 如果虚拟环境已存在，默认不会更新依赖（除非使用 `--update-deps` 参数）。
+   - 如果虚拟环境已存在，默认不会更新依赖（除非使用像 `--update-deps` 这样的选项）。
 3. 检查配置文件：
    - 如果 `config/config.yaml` 不存在，会提示从 `config.yaml.example` 复制并自定义。
-4. 启动主程序 `main.py`。
+4. 启动主程序 `main.py`，并传递指定的模式。
 
-**参数说明:**
-- `--update-deps`: 强制更新已存在虚拟环境中的依赖包
-  ```bash
-  ./scripts/run.sh --update-deps
-  ```
+**参数与选项:**
+
+-   **`[模式]`** (可选): 指定运行哪些组件。此参数会作为 `--mode <值>` 传递给 `main.py`，并且将 **覆盖** 您 `config.yaml` 文件中的 `sender.enabled` 和 `receiver.enabled` 设置。可以是以下之一：
+    -   `sender`: 仅启动剪贴板发送端。
+    -   `receiver`: 仅启动剪贴板接收端。
+    -   `both`: 同时启动发送端和接收端。
+    如果省略此参数，脚本默认将 `--mode both` 传递给 `main.py`，这意味着两个组件都将被启用，除非在 `config.yaml` 中被各自的设置明确禁用（但如果使用命令行覆盖，则命令行具有优先权）。
+
+-   **`[选项]`**:
+    -   `--update-deps`: 在运行前更新 Python 依赖。此选项可以与 `[模式]` 参数结合使用。
+
+**示例:**
+
+-   仅运行发送端:
+    ```bash
+    ./scripts/run.sh sender
+    ```
+-   仅运行接收端:
+    ```bash
+    ./scripts/run.sh receiver
+    ```
+-   同时运行发送端和接收端 (如果未指定模式，则为默认行为):
+    ```bash
+    ./scripts/run.sh
+    ```
+    或明确指定:
+    ```bash
+    ./scripts/run.sh both
+    ```
+-   仅运行发送端并强制更新依赖:
+    ```bash
+    ./scripts/run.sh sender --update-deps
+    ```
+    或者 (注意: 对于 `run.sh`，如果指定了模式，这两个特定参数的顺序很重要)
+    ```bash
+    ./scripts/run.sh --update-deps sender
+    ```
 
 按 `Ctrl+C` 停止运行。
 
