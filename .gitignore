@@ -39,11 +39,22 @@ Thumbs.db
 *.swp
 *.swo
 
-.DS_Store
-clipboard_sync/__pycache__/__init__.cpython-313.pyc
-clipboard_sync/__pycache__/clipboard_manager.cpython-313.pyc
-clipboard_sync/__pycache__/ntfy_client.cpython-313.pyc
-clipboard_sync/__pycache__/config.cpython-313.pyc
-clipboard_sync/__pycache__/utils.cpython-313.pyc
-clipboard_sync/__pycache__/sender.cpython-313.pyc
-clipboard_sync/__pycache__/receiver.cpython-313.pyc
+.aider*
+
+# Node.js / Electron / React specific
+# Dependencies
+/gui/node_modules
+/gui/src/renderer/node_modules
+
+# Build outputs
+/gui/src/renderer/build
+
+# Lockfiles
+# It is recommended to commit lockfiles (e.g., package-lock.json) for applications
+# to ensure reproducible builds. The rules ignoring them have been removed.
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

@@ -1,0 +1,87 @@
+{
+  "name": "clipboard-sync-gui",
+  "version": "1.0.0",
+  "description": "macOS GUI for Clipboard Sync Ntfy",
+  "main": "src/main/main.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npm run dev:react\" \"wait-on http://localhost:3000 && electron .\"",
+    "dev:react": "cd src/renderer && npm start",
+    "build": "npm run build:react && electron-builder",
+    "build:react": "cd src/renderer && npm run build",
+    "build:mac": "npm run build:react && electron-builder --mac",
+    "dist": "npm run build",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.clipboardsync.app",
+    "productName": "Clipboard Sync",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/main/**/*",
+      "src/renderer/build/**/*",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../main.py",
+        "to": "app/main.py"
+      },
+      {
+        "from": "../clipboard_sync",
+        "to": "app/clipboard_sync"
+      },
+      {
+        "from": "../config",
+        "to": "app/config"
+      },
+      {
+        "from": "../requirements.txt",
+        "to": "app/requirements.txt"
+      },
+      {
+        "from": "../venv",
+        "to": "app/venv",
+        "filter": ["**/*", "!**/__pycache__/**/*"]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "assets/icons/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "electron": "^22.0.0",
+    "electron-builder": "^23.6.0",
+    "wait-on": "^7.0.1"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "electron-log": "^4.4.8",
+    "js-yaml": "^4.1.0"
+  }
+}
