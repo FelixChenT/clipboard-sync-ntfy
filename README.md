@@ -4,205 +4,163 @@
 
 [中文](README_zh.md) | [English](README.md)
 
-Synchronize clipboard content (text and images) across multiple devices using [ntfy.sh](https://ntfy.sh/).
+---
 
-**Key Features:**
+**A cross-platform clipboard synchronization tool powered by [ntfy.sh](https://ntfy.sh/), with a polished GUI for macOS.**
 
-*   **Text Sync:** Bidirectional text clipboard synchronization between all devices running this script.
-*   **Image Sync (macOS):** Bidirectional image clipboard synchronization between macOS devices. On non-macOS devices, images are synced as ntfy URLs.
-*   **Ntfy-based:** Uses the free, open-source ntfy service for message pushing, no need for self-hosted server (though self-hosted ntfy server is supported).
-*   **Flexible Configuration:** Configure ntfy topics, polling intervals, timeouts, and other parameters via YAML file.
-*   **Async Efficient:** Implements efficient network communication using `asyncio`, `websockets`, and `aiohttp`.
+Synchronize your clipboard (text and images) across multiple devices seamlessly. Use the beautiful native macOS GUI for an intuitive experience, or run the powerful Python backend directly on any platform (macOS, Linux, Windows).
 
-**How It Works:**
+![Screenshot of Clipboard Sync GUI](gui/assets/screenshot.png)
+*(Screenshot of the macOS GUI)*
 
-The script consists of two main components that can run simultaneously:
+## Features
 
-1.  **Sender:**
-    *   Periodically checks local clipboard for new **text** content.
-    *   To prevent infinite loops (A receives -> writes to clipboard -> A sends again), it ignores content that was just received from ntfy and written to the clipboard.
-    *   When new, non-received text content is detected, it POSTs it as a file attachment to the configured "send" ntfy topic URL.
+### 🌟 GUI (macOS)
+- **Native macOS Interface**: A clean, modern, and intuitive user interface.
+- **Easy Configuration**: Manage all settings, including ntfy topics and server details, from a user-friendly panel. No more manual YAML editing.
+- **Live Status & Logs**: Monitor the sync status, see the running process ID, and view live logs directly within the app.
+- **System Tray Integration**: Runs discreetly in the background with a system tray icon for quick access.
+- **Start/Stop Control**: Easily start and stop the sync service with a single click.
 
-2.  **Receiver:**
-    *   Connects to the configured "receive" ntfy topic via WebSocket.
-    *   Listens for ntfy messages.
-    *   If the message contains a text attachment (`.txt`) or plain text message, downloads/retrieves the text content and writes it to the local clipboard.
-    *   If the message contains an image attachment (png, jpg, gif, etc.):
-        *   On **macOS**: Downloads the image data and uses AppleScript to write it directly to the clipboard.
-        *   On **non-macOS**: Writes the image's ntfy URL to the clipboard.
-    *   Updates an internal state to mark the recently received text content so the sender can ignore it.
+### ⚙️ Core Engine (Cross-Platform)
+- **Text Sync**: Bidirectional text clipboard synchronization between all connected devices.
+- **Image Sync (macOS Native)**: Bidirectional image clipboard synchronization between macOS devices. On non-macOS devices, images are synced as ntfy URLs.
+- **Ntfy-based**: Leverages the free and open-source [ntfy.sh](https://ntfy.sh/) service, allowing you to sync without your own server. Self-hosted ntfy is also supported.
+- **Efficient & Asynchronous**: Built with Python's `asyncio`, `websockets`, and `aiohttp` for high efficiency and low resource usage.
+- **Flexible**: Can be run as a standalone command-line script on any major OS.
 
-**Note:** The sender currently only sends **text** content. The receiver can handle both text and images (macOS).
+## How to Use
 
-## Prerequisites
+There are two ways to use Clipboard Sync Ntfy:
 
+### Method 1: The GUI Application (Recommended for macOS)
+
+This is the easiest way to get started on macOS.
+
+1.  **Download**: Grab the latest `.dmg` file from the [**Releases**](https://github.com/FelixChenT/clipboard-sync-ntfy/releases) page.
+2.  **Install**: Open the `.dmg` and drag `Clipboard Sync.app` to your Applications folder.
+3.  **Launch & Configure**:
+    *   Open the app.
+    *   Go to the "Configuration" tab.
+    *   Set your unique "Send Topic URL" and "Receive Topic". See [Configuration Details](#configuration-details) for a crucial guide on setting up topics correctly.
+    *   Click "Save".
+4.  **Start Syncing**: Go to the "Control" tab and click "Start Sync". The app will now run in the background, accessible from your system tray.
+
+### Method 2: The Command-Line Script (All Platforms)
+
+Use this method for Linux, Windows, or for advanced headless setups on macOS.
+
+#### 1. Prerequisites
 *   Python 3.8+
 *   `pip` (Python package manager)
-*   **macOS (optional):** Required for full image clipboard sync functionality. On Linux or Windows, images will be synced as URLs.
 
-## Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/FelixChenT/clipboard-sync-ntfy.git
-    cd clipboard-sync-ntfy
-    ```
-
-2.  **Create and activate virtual environment (recommended):**
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    # On Windows use: venv\Scripts\activate
-    ```
-
-3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *On non-macOS systems, `pyobjc`-related libraries will be skipped.*
-
-## Configuration
-
-1.  **Copy the configuration file:**
-    ```bash
-    cp config/config.yaml.example config/config.yaml
-    ```
-
-2.  **Edit `config/config.yaml`:**
-    *   **`sender.ntfy_topic_url`:** **Must modify!** Set your ntfy topic URL for **sending** clipboard content. For example, `https://ntfy.sh/my_clipboard_sender_abc123`. Use a complex, hard-to-guess name.
-    *   **`receiver.ntfy_topic`:** **Must modify!** Set your ntfy topic name for **receiving** clipboard content. For example, `my_clipboard_receiver_xyz789`. **This topic should correspond to the topic part of the `sender.ntfy_topic_url` configured on your other devices.**
-    *   **`receiver.ntfy_server`:** Modify this if you're using a self-hosted ntfy server.
-    *   Adjust `poll_interval_seconds`, `request_timeout_seconds`, `logging.level`, and other parameters as needed.
-    *   Ensure `sender.enabled` and `receiver.enabled` are set to `true` to enable respective functionality.
-
-    **Important:**
-    *   Sending and receiving typically need different ntfy topics to prevent devices from sending messages to themselves.
-    *   **Device A**'s `sender.ntfy_topic_url` should point to the topic where **Device B**'s `receiver.ntfy_topic` is listening.
-    *   **Device B**'s `sender.ntfy_topic_url` should point to the topic where **Device A**'s `receiver.ntfy_topic` is listening.
-
-    **Example (two devices A and B):**
-
-    *   **Device A (`config.yaml`)**:
-        ```yaml
-        sender:
-          ntfy_topic_url: "https://ntfy.sh/clipboard_A_to_B"
-          # ...
-        receiver:
-          ntfy_topic: "clipboard_B_to_A"
-          # ...
-        ```
-    *   **Device B (`config.yaml`)**:
-        ```yaml
-        sender:
-          ntfy_topic_url: "https://ntfy.sh/clipboard_B_to_A"
-          # ...
-        receiver:
-          ntfy_topic: "clipboard_A_to_B"
-          # ...
-        ```
-
-## Running
-
-A `run.sh` script is provided to conveniently set up the environment and start the program.
-
+#### 2. Installation
 ```bash
+# Clone the repository
+git clone https://github.com/FelixChenT/clipboard-sync-ntfy.git
+cd clipboard-sync-ntfy
+
+# Create and activate a virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate
+# On Windows, use: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+*On non-macOS systems, `pyobjc`-related libraries will be skipped automatically.*
+
+#### 3. Configuration
+Copy the example config file:
+```bash
+cp config/config.yaml.example config/config.yaml
+```
+Now, edit `config/config.yaml` with your text editor. See [Configuration Details](#configuration-details) below for a guide on setting up your topics.
+
+#### 4. Running the Script
+A helper script `run.sh` is provided for convenience.
+```bash
+# Make the script executable
 chmod +x scripts/run.sh
-./scripts/run.sh [mode] [options]
+
+# Run both sender and receiver (default)
+./scripts/run.sh
+
+# Or run only the sender
+./scripts/run.sh sender
+
+# Or run only the receiver
+./scripts/run.sh receiver
 ```
+Press `Ctrl+C` to stop.
 
-The script will automatically:
-1. Check Python environment.
-2. Check and create Python virtual environment (`venv`):
-   - If the virtual environment doesn't exist, creates a new one and installs all dependencies.
-   - If the virtual environment exists, won't update dependencies by default (unless an option like `--update-deps` is used).
-3. Check configuration file:
-   - If `config/config.yaml` doesn't exist, prompts to copy from `config.yaml.example` and customize.
-4. Start the main program `main.py`, passing the specified mode.
+## Configuration Details
 
-**Arguments & Options:**
+To sync between two devices, **Device A** and **Device B**, you must configure them to listen to each other. **Do not use the same topic for sending and receiving.**
 
--   **`[mode]`** (optional): Specifies which components to run. This argument is passed to `main.py` as `--mode <value>` and will **override** the `sender.enabled` and `receiver.enabled` settings in your `config.yaml`. Can be one of:
-    -   `sender`: Starts only the clipboard sender.
-    -   `receiver`: Starts only the clipboard receiver.
-    -   `both`: Starts both the sender and receiver.
-    If omitted, the script defaults to passing `--mode both` to `main.py`, meaning both components will be enabled unless explicitly disabled by their individual settings in `config.yaml` (however, the command-line override takes precedence if used).
+*   **Device A** should send to the topic that **Device B** is receiving from.
+*   **Device B** should send to the topic that **Device A** is receiving from.
 
--   **`[options]`**:
-    -   `--update-deps`: Updates Python dependencies before running. This can be combined with the `[mode]` argument.
+**Example Setup:**
 
-**Examples:**
+*   **Device A (`config.yaml` or GUI Config):**
+    *   `sender.ntfy_topic_url`: `https://ntfy.sh/topic_A_to_B`
+    *   `receiver.ntfy_topic`: `topic_B_to_A`
 
--   Run only the sender:
+*   **Device B (`config.yaml` or GUI Config):**
+    *   `sender.ntfy_topic_url`: `https://ntfy.sh/topic_B_to_A`
+    *   `receiver.ntfy_topic`: `topic_A_to_B`
+
+## For Developers
+
+Want to contribute or build from source? Here’s how.
+
+### Backend Setup
+Follow the steps in [Method 2](#method-2-the-command-line-script-all-platforms) to set up the Python environment.
+
+### GUI Setup (macOS)
+The GUI is an Electron/React application.
+
+1.  **Prerequisites**: Node.js (v16+) and npm.
+2.  **Install Dependencies**:
     ```bash
-    ./scripts/run.sh sender
+    # Install root dependencies for Electron
+    npm install
+
+    # Install dependencies for the React frontend
+    cd gui/src/renderer
+    npm install
+    cd ../../..
     ```
--   Run only the receiver:
+3.  **Run in Development Mode**:
+    This command starts the React dev server and the Electron app, enabling hot-reloading for the UI.
     ```bash
-    ./scripts/run.sh receiver
-    ```
--   Run both sender and receiver (this is the default behavior if no mode is specified):
-    ```bash
-    ./scripts/run.sh
-    ```
-    or explicitly:
-    ```bash
-    ./scripts/run.sh both
-    ```
--   Run only the sender and force update dependencies:
-    ```bash
-    ./scripts/run.sh sender --update-deps
-    ```
-    or (note: for `run.sh` the order of these two specific arguments matters if mode is specified)
-    ```bash
-    ./scripts/run.sh --update-deps sender
+    npm run dev
     ```
 
-Press `Ctrl+C` to stop running.
-
-**Manual Running:**
-If you don't want to use the `run.sh` script:
-1. Create and activate virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   ```
-2. Install dependencies:
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-3. Ensure configuration file exists:
-   ```bash
-   cp config/config.yaml.example config/config.yaml
-   # Edit config.yaml with your settings
-   ```
-4. Run the main program:
-   ```bash
-   python main.py
-   ```
-
-## Proxy Settings
-
-The startup script (`run.sh`) does **not** automatically handle network proxies. If your network environment requires a proxy to access `ntfy.sh` or your ntfy server, please set standard environment variables in your terminal **before** running the script, for example:
-
+### Building the Application
+To build the native macOS `.dmg` file from source:
 ```bash
-export HTTPS_PROXY="http://your_proxy_server:port"
-export ALL_PROXY="socks5://your_proxy_server:port" # or appropriate for your proxy type
+# This command builds the React app and then packages it with Electron
+npm run build
 ```
+The output will be in the `gui/dist` directory.
 
-Or handle proxies within the Python script (not currently implemented).
+## How It Works
 
-## Limitations and Known Issues
+The application consists of two main components:
 
-*   **Image Sending:** The current version **only sends text** content. The receiver can handle image attachments from other ntfy sources (like mobile apps). Future versions may extend the sender to support sending images.
-*   **macOS Dependencies:** Full image clipboard sync only works on macOS.
-*   **Feedback Loop:** The script has built-in prevention against local send -> receive -> send loops (via `_last_received_text` state), but this relies on exact text content matching. Unexpected behavior may still occur in edge cases or during rapid consecutive operations.
-*   **Error Handling:** While some error handling is implemented, manual script restart may be needed during network instability or ntfy service unavailability.
-*   **Security:** Using public ntfy.sh topics means anyone who knows the topic name can potentially see or send content. For sensitive information, use [ntfy's access control features](https://docs.ntfy.sh/config/#access-control) or set up an authenticated self-hosted ntfy server. **Never commit `config.yaml` files containing private or authentication information to public repositories!**
+1.  **Sender**: Periodically checks the local clipboard for new **text** content. To prevent infinite loops, it ignores content that was just received. When new content is detected, it's sent to the configured ntfy topic.
+2.  **Receiver**: Maintains a persistent WebSocket connection to its ntfy topic. When a message arrives, it's processed and written to the local clipboard. It handles both text and images (on macOS, images are placed directly on the clipboard; on other systems, the image URL is used).
+
+## Limitations & Security
+
+*   **Image Sending**: The core Python sender currently **only sends text**. The receiver can handle images sent from other sources (like the ntfy mobile app).
+*   **Security**: Using public ntfy topics means anyone with the topic name can intercept your clipboard data. For sensitive information, use a self-hosted ntfy server with [access control](https://docs.ntfy.sh/config/#access-control). **Never commit a `config.yaml` file with private topics to a public repository.**
 
 ## Contributing
 
-Pull Requests and Issues are welcome to improve this project!
+Pull Requests and Issues are welcome!
 
 ## License
 
